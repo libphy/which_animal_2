@@ -16,6 +16,11 @@ I had a choice to use theano instead, but I decided to explore tensorflow withou
 Very useful tensorflow tutorial: https://www.oreilly.com/learning/hello-tensorflow
 
 ## Progress
+#### some time ago
+modvgg16.py: Modified pre-trained VGGNet code to become CNN-code and modified dimension of fc8 layer (output).
+Tested on sample images using sysnet labels which is not meaningful (by default label 0 is fish) but just shows that the modified VGGNet is working and gives output.
+It does not have training part yet.
+
 #### 08-30-2016
 #### Test loading 25000 images in numpy array
 Still working on loading training data issue.
@@ -44,3 +49,10 @@ So I implemented a function which takes a list of file names as input and get th
 
 #### training module
 see https://github.com/tensorflow/tensorflow/blob/r0.10/tensorflow/examples/tutorials/mnist/fully_connected_feed.py
+
+#### 09-01-2016
+Worked on training module to work.
+Referenced MNIST example from TensorFlow website.
+tf.flag doesn't work well with custom class, so I rewrote the main function as class Training().
+It took a while to understand what the example code does. The main difference is the model building process where mine is building model as an object (I'm not sure if it's a part of reason for the memory issue below).
+The training worked in the end, but when I used batch_size of 100, gtx 970 failed to load the graph- which I don't understand why tensorflow has to pre-allocate 100 times of all vgg weights all at once. In the end I used smaller batch_size 10, and smaller input data number to begin with, and it did work. I still need to organize other data set such as validation and test in order to generate the report and evaluation.
