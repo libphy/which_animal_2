@@ -41,7 +41,7 @@ class DataSet(object):
             self._index_in_epoch = batch_size
             assert batch_size <= self._num_examples
         end = self._index_in_epoch
-        print 'start', start, 'end', end
+        #print 'start', start, 'end', end
         self._images, self._labels = self.get_data(self._files[start:end], self.path)
         return self._images, self._labels
 

@@ -6,16 +6,19 @@ import tensorflow as tf
 import os
 import modvgg16
 import load_data
+import imageprep
 import time
 
 
 
 class Training(object):
-    def __init__(self, path, train_load_limit=None, batch_size=100, n_epoch=5, learning_rate = 0.01):
-        self.train_dir = path
+    def __init__(self, path_train, path_test, train_load_limit=None, batch_size=100, n_epoch=5, learning_rate = 0.01, train_val_ratio = 0.8):
+        self.train_dir = path_train
+        self.test_dir = path_test
         self.batch_size = batch_size
         self.n_epoch = n_epoch
         self.learning_rate = learning_rate
+        self.train_val_ratio = train_val_ratio
         if train_load_limit == None:
             self.max_num_train = 25000
         else:
@@ -44,7 +47,7 @@ class Training(object):
         steps_per_epoch = data_obj.num_examples // self.batch_size
         num_examples = steps_per_epoch * self.batch_size
         for step in xrange(steps_per_epoch):
-            feed_dict = fill_feed_dict(data_obj, iamges_placeholder, labels_placeholder)
+            feed_dict = self.fill_feed_dict(data_obj, images_placeholder, labels_placeholder)
             true_count += sess.run(eval_correct, feed_dict = feed_dict)
         precision = true_count/num_examples
         print('  Num examples: %d  Num correct: %d  Precision @ 1: %0.04f' %(num_examples, true_count, precision))
@@ -111,7 +114,17 @@ class Training(object):
         # test on MNIST.
         inputfiles = os.listdir(self.train_dir)
         np.random.shuffle(inputfiles)
-        data_obj = load_data.DataSet(inputfiles[:self.max_num_train],self.train_dir)
+        trainfiles = inputfiles[:self.max_num_train]
+        testlist = os.listdir(self.test_dir)
+        np.random.shuffle(testlist)
+        trainlist = trainfiles[:int(len(trainfiles)*self.train_val_ratio)]
+        validationlist = trainfiles[int(len(trainfiles)*self.train_val_ratio):]
+        trainset = load_data.DataSet(trainlist,self.train_dir)
+        validationset = load_data.DataSet(validationlist,self.train_dir)
+        testset = load_data.DataSet(testlist,self.test_dir)
+        print('Train list: ', len(trainlist))
+        print('Validation list: ', len(validationlist))
+        print('Test list: ', len(testlist))
 
         with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu_memory_fraction=0.7)))) as sess:
             # Generate placeholders for the images and labels.
@@ -161,7 +174,7 @@ class Training(object):
 
               # Fill a feed dictionary with the actual set of images and labels
               # for this particular training step.
-                feed_dict = self.fill_feed_dict(data_obj,
+                feed_dict = self.fill_feed_dict(trainset,
                                          images_placeholder,
                                          labels_placeholder)
 
@@ -175,61 +188,52 @@ class Training(object):
 
                 duration = time.time() - start_time
 
-            # Write the summaries and print an overview fairly often.
-            if step % self.batch_size == 0:
-                # Print status to stdout.
-                print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
-                # Update the events file.
-                summary_str = sess.run(summary_op, feed_dict=feed_dict)
-                summary_writer.add_summary(summary_str, step)
-                summary_writer.flush()
+                # Write the summaries and print an overview fairly often.
+                if step % self.batch_size == 0:
+                    # Print status to stdout.
+                    print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
+                    # Update the events file.
+                    summary_str = sess.run(summary_op, feed_dict=feed_dict)
+                    summary_writer.add_summary(summary_str, step)
+                    summary_writer.flush()
 
-            # Save a checkpoint and evaluate the model periodically.
-            if (step + 1) % self.batch_size == 0 or (step + 1) == self.max_num_train:
-                checkpoint_file = os.path.join('log', 'checkpoint')
-                saver.save(sess, checkpoint_file, global_step=step)
-                # Evaluate against the training set.
-                print('Training Data Eval:')
-                self.do_eval(sess,
-                        eval_correct,
-                        images_placeholder,
-                        labels_placeholder,
-                        data_obj.train)
-                # Evaluate against the validation set.
-                print('Validation Data Eval:')
-                self.do_eval(sess,
-                        eval_correct,
-                        images_placeholder,
-                        labels_placeholder,
-                        data_obj.validation)
-                # Evaluate against the test set.
-                print('Test Data Eval:')
-                self.do_eval(sess,
-                        eval_correct,
-                        images_placeholder,
-                        labels_placeholder,
-                        data_obj.test)
+                # Save a checkpoint and evaluate the model periodically.
+                if (step + 1) % self.batch_size == 0 or (step + 1) == self.max_num_train:
+                    checkpoint_file = os.path.join('log', 'checkpoint')
+                    saver.save(sess, checkpoint_file, global_step=step)
+                    # Evaluate against the training set.
+                    print('Training Data Eval:')
+                    self.do_eval(sess,
+                            eval_correct,
+                            images_placeholder,
+                            labels_placeholder,
+                            trainset)
+                    # Evaluate against the validation set.
+                    print('Validation Data Eval:')
+                    self.do_eval(sess,
+                            eval_correct,
+                            images_placeholder,
+                            labels_placeholder,
+                            validationset)
+                    # Evaluate against the test set.
+                    print('Test Data Eval:')
+                    self.do_eval(sess,
+                            eval_correct,
+                            images_placeholder,
+                            labels_placeholder,
+                            testset)
+
 
 if __name__ == '__main__':
 
 # #the images are already scaled
-    path = '/home/geena/projects/which_animal/data/images/train/processed/'
-    train = Training(path,100, batch_size=10)
+    path_train = '/home/geena/projects/which_animal_2/data/train/processed/'
+    path_test = '/home/geena/projects/which_animal_2/data/test/processed/'
+    if not os.path.isdir(path_train):
+        os.mkdir(path_train)
+        imageprep.onebyone('/home/geena/projects/which_animal_2/data/train/')
+    if not os.path.isdir(path_test):
+        os.mkdir(path_test)
+        imageprep.onebyone('/home/geena/projects/which_animal_2/data/test/')
+    train = Training(path_train, path_test, 100, batch_size=10)
     train.run_training()
-
-# fileslist = os.listdir(path)
-# np.random.shuffle(fileslist)
-# test = load_data.DataSet(fileslist[:30],path)
-# X_batch, labels = test.next_batch(10)
-# # #prob = batchtest(X_batch)
-# nb = X_batch.shape[0]
-# with tf.Session(config=tf.ConfigProto(gpu_options=(tf.GPUOptions(per_process_gpu_memory_fraction=0.7)))) as sess:
-#     images = tf.placeholder("float", [nb, 224, 224, 3])
-#     feed_dict = {images: X_batch}
-#
-#     vgg = modvgg16.Vgg16()
-#     with tf.name_scope("content_vgg"):
-#         vgg.build(images)
-#     init_op = tf.initialize_all_variables()
-#     sess.run(init_op)
-#     prob = sess.run(vgg.prob, feed_dict=feed_dict)
