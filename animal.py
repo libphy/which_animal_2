@@ -12,9 +12,9 @@ import time
 
 
 class Training(object):
-    def __init__(self, path_train, path_test, train_load_limit=None, batch_size=100, n_epoch=5, learning_rate = 0.01, train_val_ratio = 0.8):
-        self.train_dir = path_train
-        self.test_dir = path_test
+    def __init__(self, path, train_load_limit=None, batch_size=100, n_epoch=5, learning_rate = 0.01, train_val_ratio = 0.8, train_test_split = 0.7):
+        self.train_dir = path
+        self.train_test_split = train_test_split
         self.batch_size = batch_size
         self.n_epoch = n_epoch
         self.learning_rate = learning_rate
@@ -114,14 +114,13 @@ class Training(object):
         # test on MNIST.
         inputfiles = os.listdir(self.train_dir)
         np.random.shuffle(inputfiles)
-        trainfiles = inputfiles[:self.max_num_train]
-        testlist = os.listdir(self.test_dir)
-        np.random.shuffle(testlist)
+        trainfiles = inputfiles[:int(self.max_num_train*self.train_test_split)]
+        testlist = inputfiles[int(self.max_num_train*self.train_test_split):self.max_num_train]
         trainlist = trainfiles[:int(len(trainfiles)*self.train_val_ratio)]
         validationlist = trainfiles[int(len(trainfiles)*self.train_val_ratio):]
         trainset = load_data.DataSet(trainlist,self.train_dir)
         validationset = load_data.DataSet(validationlist,self.train_dir)
-        testset = load_data.DataSet(testlist,self.test_dir)
+        testset = load_data.DataSet(testlist,self.train_dir)
         print('Train list: ', len(trainlist))
         print('Validation list: ', len(validationlist))
         print('Test list: ', len(testlist))
@@ -227,13 +226,6 @@ class Training(object):
 if __name__ == '__main__':
 
 # #the images are already scaled
-    path_train = '/home/geena/projects/which_animal_2/data/train/processed/'
-    path_test = '/home/geena/projects/which_animal_2/data/test/processed/'
-    if not os.path.isdir(path_train):
-        os.mkdir(path_train)
-        imageprep.onebyone('/home/geena/projects/which_animal_2/data/train/')
-    if not os.path.isdir(path_test):
-        os.mkdir(path_test)
-        imageprep.onebyone('/home/geena/projects/which_animal_2/data/test/')
-    train = Training(path_train, path_test, 100, batch_size=10)
+    path = '/home/geena/projects/which_animal_2/data/train/processed/'
+    train = Training(path, 1000, batch_size=10)
     train.run_training()
