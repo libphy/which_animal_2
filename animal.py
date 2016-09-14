@@ -227,5 +227,5 @@ if __name__ == '__main__':
 
 # #the images are already scaled
     path = '/home/geena/projects/which_animal_2/data/train/processed/'
-    train = Training(path, 1000, batch_size=10)
+    train = Training(path, 1000, batch_size=20)
     train.run_training()

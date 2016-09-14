@@ -59,4 +59,20 @@ The training worked in the end, but when I used batch_size of 100, gtx 970 faile
 
 #### 09-11-2016
 Modified the run_training function and made the training, validation, and test evaluations to work. The test dataset from kaggle data did not have label (since the competition evaluates on test set internally), so I ended up not using them, but random sampled from training data and set aside- same procedure for validation set.
-My code can limit how much total data to use- for now I tested with 1000 total data (train+validation+test) with default 0.7 train-test split ratio, then train data is further divided by default 0.8 train-validation split ratio. I tried batch size of 100, 50 and 10 but the computer resource seems to handle only small batch size of 10 (did not accept 50). For this input with default n_epoch = 5 and learning rate 0.01, I got 96% of precision for cat vs dog image data, and it took just a few seconds. 
+My code can limit how much total data to use- for now I tested with 1000 total data (train+validation+test) with default 0.7 train-test split ratio, then train data is further divided by default 0.8 train-validation split ratio. I tried batch size of 100, 50 and 10 but the computer resource seems to handle only small batch size of 10 or 20 (did not accept 50). For this input with default n_epoch = 5 and learning rate 0.01, I got 96% of precision for cat vs dog image data, and it took just a few seconds.
+To Do:
+Need to add timing for training- so far it is not measured.
+Need to modify loss display- not clear which loss it's talking about.
+
+#### 09-13-2016
+Need to understand training code better. Tried to inspect using tensorboard.
+To use tensorboard, first make sure summarywriter exist in the code:
+```summary_writer = tf.train.SummaryWriter('log', sess.graph)```
+, then run a bash command to run tensorboard: ```$ tensorboard --logdir=log```, then open a browser and go to a localhost ```localhost:6006/#graphs```.
+
+Then, in the graph tab, there is an interactive graph shown below (can click and see what's in the boxes and blobs).  
+
+<img alt="graph" src="images/tensorboard.png" width=800>  
+<sub><b>Figure 1: </b> Graph of the training of the model using CNN code</sub>   
+<img alt="graph" src="images/CNNmodel.png" width=600>  
+<sub><b>Figure 2: </b> Graph of the model (content_vgg)</sub>  
